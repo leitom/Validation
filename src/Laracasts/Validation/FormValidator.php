@@ -32,11 +32,17 @@ abstract class FormValidator {
 	 * Validate the form data
 	 *
 	 * @param  mixed $formData
+     * @param  array $mappings
 	 * @return mixed
 	 * @throws FormValidationException
 	 */
-	public function validate($formData)
+	public function validate($formData, $mappings = [])
 	{
+        if ( ! empty($mappings))
+        {
+            $this->replaceRulePlaceholdersWith($mappings);
+        }
+
 		$formData = $this->normalizeFormData($formData);
 
 		$this->validation = $this->validator->make(
@@ -98,4 +104,36 @@ abstract class FormValidator {
 		return $formData;
 	}
 
+    /**
+     * Go trough all the mappings
+     * and inject the mappings into the rules.
+     *
+     * @param  array $mappings
+     * @return void
+     */
+    protected function replaceRulePlaceholdersWith(array $mappings)
+    {
+        $rules = $this->getValidationRules();
+
+        foreach ($mappings as $search => $value)
+        {
+            $this->injectMappingIntoRules($rules, $search, $value);
+        }
+    }
+
+    /**
+     * Inject a mapping into all defined rules.
+     *
+     * @param  array  $rules
+     * @param  string $search
+     * @param  mixed  $value
+     * @return void
+     */
+    protected function injectMappingIntoRules(array $rules, $search, $value)
+    {
+        foreach ($rules as $field => $rule)
+        {
+            $this->rules[$field] = str_replace('{'.$search.'}', $value, $rule);
+        }
+    }
 }

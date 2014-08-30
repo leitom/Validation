@@ -36,6 +36,20 @@ class FormValidatorSpec extends ObjectBehavior
 		$this->shouldThrow('Laracasts\Validation\FormValidationException')->duringValidate($fakeFormData);
 	}
 
+    function it_injects_mappings_into_rules(FactoryInterface $validatorFactory, ValidatorInterface $validator)
+    {
+        $fakeFormData = ['username' => 'joe', 'email' => 'joe@example.com'];
+        $mappings = ['user_id' => 1];
+        $convertedRuleSet = ['username' => 'required', 'email' => 'unique:users,email,1,id'];
+
+        $validatorFactory->make($fakeFormData, $convertedRuleSet, [])->willReturn($validator);
+        $validator->fails()->willReturn(false);
+
+        $this->validate($fakeFormData, $mappings)->shouldReturn(true);
+
+        $this->getValidationRules()->shouldBe($convertedRuleSet);
+    }
+
 	function it_accepts_a_command_object_in_lieu_of_an_input_array(FactoryInterface $validatorFactory, ValidatorInterface $validator)
 	{
 		$formDataAsCommand = new CommandStub;
@@ -44,12 +58,14 @@ class FormValidatorSpec extends ObjectBehavior
 		$validatorFactory->make($formDataCastToArray, $this->getValidationRules(), [])->willReturn($validator);
 
 		$this->validate($formDataAsCommand)->shouldReturn(true);
-
 	}
 }
 
 class ExampleValidator extends \Laracasts\Validation\FormValidator {
-	protected $rules = ['username' => 'required'];
+	protected $rules = [
+        'username' => 'required',
+        'email' => 'unique:users,email,{user_id},id'
+    ];
 }
 
 class CommandStub {
